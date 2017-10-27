@@ -2,6 +2,7 @@ extern crate pulldown_cmark;
 extern crate docopt;
 extern crate serde_yaml;
 extern crate fs_extra;
+extern crate comrak;
 #[macro_use]
 extern crate tera;
 #[macro_use]
@@ -15,6 +16,7 @@ use pulldown_cmark::{Parser, Options,  html};
 use tera::Context;
 use docopt::Docopt;
 use fs_extra::dir::{copy, CopyOptions};
+use comrak::{markdown_to_html, ComrakOptions};
 
 #[derive(Serialize)]
 pub struct DocdocContext {
@@ -33,6 +35,7 @@ Usage:
 Options:
     --theme=<theme>         Use a custom theme.
     --template=<template>   Use a specific template in a theme. [default: index.html]
+    --gfm                   Use GitHub Flavored Markdown.
     -h, --help              Show this screen.
     --version               Show version.
 ";
@@ -42,6 +45,7 @@ struct Args {
     arg_file: String,
     flag_theme: String,
     flag_template: String,
+    flag_gfm: bool,
 }
 
 pub fn parse_frontmatter(text: &str) -> (Option<&str>, &str) {
@@ -57,7 +61,7 @@ pub fn parse_frontmatter(text: &str) -> (Option<&str>, &str) {
     }
 }
 
-pub fn load_document(file: &str) -> DocdocContext {
+pub fn load_document(file: &str, gfm: bool) -> DocdocContext {
     let mut document = String::new();
     let mut file_handle = File::open(file)
         .expect("File not found!");
@@ -74,11 +78,26 @@ pub fn load_document(file: &str) -> DocdocContext {
     };
 
     let mut html = String::with_capacity(document.len() * 3 / 2);
-    let mut options = Options::empty();
-    options.insert(pulldown_cmark::OPTION_ENABLE_TABLES);
 
-    let parser = Parser::new_ext(&document, options);
-    html::push_html(&mut html, parser);
+    if gfm {
+        let mut options = ComrakOptions::default();
+
+        options.github_pre_lang = true;
+        options.ext_strikethrough = true;
+        options.ext_table = true;
+        options.ext_autolink = true;
+        options.ext_tasklist = true;
+        options.ext_superscript = true;
+        options.ext_header_ids = Some("".to_string());
+
+        html = markdown_to_html(document, &options);
+    } else {
+        let mut options = Options::empty();
+        options.insert(pulldown_cmark::OPTION_ENABLE_TABLES);
+
+        let parser = Parser::new_ext(&document, options);
+        html::push_html(&mut html, parser);
+    }
 
     DocdocContext {
         body: html,
@@ -128,7 +147,7 @@ fn main() {
     let document_path = Path::new(&args.arg_file);
 
 
-    let docdoc = load_document(document_path.to_str().unwrap());
+    let docdoc = load_document(document_path.to_str().unwrap(), args.flag_gfm);
     let rendered = render_document(theme_path, &args.flag_template, &docdoc);
 
     write_document(
