@@ -1,0 +1,6 @@
+[package]
+name = "docdoc"
+version = "0.1.0"
+authors = ["Marc Addeo <marcaddeo@gmail.com>"]
+
+[dependencies]
