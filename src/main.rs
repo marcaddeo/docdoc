@@ -1,3 +1,4 @@
+extern crate docdoc;
 extern crate pulldown_cmark;
 extern crate docopt;
 extern crate serde_yaml;
@@ -16,16 +17,19 @@ use pulldown_cmark::{Parser, Options,  html};
 use tera::Context;
 use docopt::Docopt;
 use fs_extra::dir::{copy, CopyOptions};
-use comrak::{markdown_to_html, ComrakOptions};
+use comrak::{markdown_to_html as comrak_markdown_to_html, ComrakOptions};
 
 #[derive(Serialize)]
-pub struct DocdocContext {
-    body: String,
-    metadata: BTreeMap<String, String>,
+pub struct DocumentContext<'a> {
+    metadata: &'a BTreeMap<String, String>,
+    body: &'a str,
 }
 
+const VERSION: &'static str = "0.1.0";
 const USAGE: &'static str = "
 docdoc
+
+Generate a themed HTML document from Markdown. Supports both CommonMark and GitHub Flavored Markdown.
 
 Usage:
     docdoc [options] [--] <file>
@@ -46,39 +50,36 @@ struct Args {
     flag_theme: String,
     flag_template: String,
     flag_gfm: bool,
+    flag_version: bool,
 }
 
-pub fn parse_frontmatter(text: &str) -> (Option<&str>, &str) {
-    return match text.starts_with("---\n") {
-        true => {
-            let slice_after_marker = &text[4..];
-            match slice_after_marker.find("---\n") {
-                Some(end) => (Some(&text[..end + 4]), &text[end + 2 * 4..]),
-                None => (None, text),
+pub struct FrontmatteredMarkdown<'a> {
+    frontmatter: Option<&'a str>,
+    content: &'a str,
+}
+
+impl<'a> FrontmatteredMarkdown<'a> {
+    pub fn parse(text: &'a str) -> FrontmatteredMarkdown<'a> {
+        if text.starts_with("---\n") {
+            match String::from(&text[4..]).find("---\n") {
+                Some(end) => {
+                    FrontmatteredMarkdown {
+                        frontmatter: Some(&text[..end + 4]),
+                        content: &text[end + 8..],
+                    }
+                },
+                None => panic!("Frontmatter never ends!"),
             }
-        },
-        false => (None, text),
+        } else {
+            FrontmatteredMarkdown {
+                frontmatter: None,
+                content: text,
+            }
+        }
     }
 }
 
-pub fn load_document(file: &str, gfm: bool) -> DocdocContext {
-    let mut document = String::new();
-    let mut file_handle = File::open(file)
-        .expect("File not found!");
-
-    file_handle.read_to_string(&mut document)
-        .expect("Could not read file!");
-
-    let (frontmatter, document) = parse_frontmatter(&document);
-    let metadata: BTreeMap<String, String> = match frontmatter {
-        Some(matter) => {
-            serde_yaml::from_str(matter).unwrap()
-        },
-        None => BTreeMap::new(),
-    };
-
-    let mut html = String::with_capacity(document.len() * 3 / 2);
-
+pub fn markdown_to_html(markdown: &str, gfm: bool) -> String {
     if gfm {
         let mut options = ComrakOptions::default();
 
@@ -90,32 +91,50 @@ pub fn load_document(file: &str, gfm: bool) -> DocdocContext {
         options.ext_superscript = true;
         options.ext_header_ids = Some("".to_string());
 
-        html = markdown_to_html(document, &options);
+        comrak_markdown_to_html(markdown, &options)
     } else {
+        let mut html = String::with_capacity(markdown.len() * 3 / 2);
         let mut options = Options::empty();
         options.insert(pulldown_cmark::OPTION_ENABLE_TABLES);
 
-        let parser = Parser::new_ext(&document, options);
+        let parser = Parser::new_ext(markdown, options);
         html::push_html(&mut html, parser);
-    }
 
-    DocdocContext {
-        body: html,
-        metadata: metadata,
+        html
     }
+}
+
+pub fn load_document(path: &str) -> String {
+    let mut document = String::new();
+    let mut file = File::open(path)
+        .expect(&format!("\"{}\" not found!", path));
+
+    file.read_to_string(&mut document)
+        .expect(&format!("Could not read \"{}\"!", path));
+
+    document
 }
 
 pub fn render_document(
     theme_path: &str,
     template: &str,
-    docdoc: &DocdocContext
+    document: &DocumentContext,
 ) -> String {
     let mut context = Context::new();
-    context.add("docdoc", &docdoc);
+    context.add("document", &document);
 
-    compile_templates!(&format!("{}/**/*.html", theme_path))
-        .render(template, &context)
-        .unwrap()
+    let tera = compile_templates!(&format!("{}/**/*.html", theme_path));
+
+    match tera.render(template, &context) {
+        Ok(html) => html,
+        Err(error) => {
+            println!("{}", error);
+            for err in error.iter().skip(1) {
+                println!("{}", err);
+            }
+            ::std::process::exit(1);
+        }
+    }
 }
 
 pub fn write_document(output_file: &str, assets_path: &str, content: &str) {
@@ -127,11 +146,22 @@ pub fn write_document(output_file: &str, assets_path: &str, content: &str) {
         .expect("Could not write to output file!");
 
     let document_path = Path::new(output_file);
+    let document_parent = match document_path.parent() {
+        Some(parent) => parent,
+        None => panic!("Could not find documents parent directory!")
+    };
+
     let mut options = CopyOptions::new();
     options.overwrite = true;
 
-    copy(&assets_path, document_path.parent().unwrap(), &options)
-        .unwrap();
+    match copy(&assets_path, document_parent, &options) {
+        Ok(_) => (),
+        Err(_) => panic!(
+            "An error occured while trying to copy theme assets from \"{}\" to document destination \"{}\"!",
+            assets_path,
+            document_parent.to_str().unwrap(),
+        ),
+    }
 }
 
 fn main() {
@@ -139,19 +169,44 @@ fn main() {
         .and_then(|d| d.deserialize())
         .unwrap_or_else(|e| e.exit());
 
-    let theme_path = match args.flag_theme.is_empty() {
-        true => "/Users/marc/dev/rust/docdoc/docs/themes/default",
-        false => &args.flag_theme,
+    if args.flag_version {
+        return println!("{}", VERSION);
+    }
+
+    let theme_path = if args.flag_theme.is_empty() {
+        "/Users/marc/dev/rust/docdoc/docs/themes/default"
+    } else {
+        &args.flag_theme
     };
     let assets_path = format!("{}/assets", theme_path);
-    let document_path = Path::new(&args.arg_file);
+    let document_path: &str = match Path::new(&args.arg_file).to_str() {
+        Some(path) => path,
+        None => panic!(format!("\"{}\" is not a valid path!", &args.arg_file)),
+    };
 
+    let document = load_document(document_path);
+    let markdown = FrontmatteredMarkdown::parse(&document);
+    let metadata: BTreeMap<String, String> = match markdown.frontmatter {
+        Some(frontmatter) => {
+            serde_yaml::from_str(frontmatter)
+                .expect("Could not parse YAML Frontmatter")
+        },
+        None => BTreeMap::new(),
+    };
 
-    let docdoc = load_document(document_path.to_str().unwrap(), args.flag_gfm);
-    let rendered = render_document(theme_path, &args.flag_template, &docdoc);
+    let document_context = DocumentContext {
+        metadata: &metadata,
+        body: &markdown_to_html(markdown.content, args.flag_gfm),
+    };
+
+    let rendered = render_document(
+        theme_path,
+        &args.flag_template,
+        &document_context,
+    );
 
     write_document(
-        &document_path.to_str().unwrap().replace(".md", ".html"),
+        &document_path.replace(".md", ".html"),
         &assets_path,
         &rendered,
     );
