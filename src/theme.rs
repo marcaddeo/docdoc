@@ -168,21 +168,21 @@ impl Theme {
     pub fn metadata(&self) -> &Mapping {
         &self.metadata
     }
+}
 
-    pub fn copy_assets(&self, destination: &Path) -> Result<(), Error> {
-        match create_dir_all(&destination) {
-            Ok(_) => (),
-            Err(error) => {
-                return Err(Error::IoError(error));
-            },
-        }
+pub fn copy_theme_assets(theme: &Theme, destination: &Path) -> Result<(), Error> {
+    match create_dir_all(&destination) {
+        Ok(_) => (),
+        Err(error) => {
+            return Err(Error::IoError(error));
+        },
+    }
 
-        let mut options = CopyOptions::new();
-        options.overwrite = true;
+    let mut options = CopyOptions::new();
+    options.overwrite = true;
 
-        match copy_items(&self.assets, &destination, &options) {
-            Ok(_) => Ok(()),
-            Err(error) => Err(Error::FsError(error))
-        }
+    match copy_items(&theme.assets(), &destination, &options) {
+        Ok(_) => Ok(()),
+        Err(error) => Err(Error::FsError(error))
     }
 }
