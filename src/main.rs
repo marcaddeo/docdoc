@@ -25,7 +25,11 @@ pub struct DocumentContext<'a> {
     body: &'a str,
 }
 
-const VERSION: &'static str = "0.1.0";
+const VERSION_STR: &'static str = concat!(
+    env!("CARGO_PKG_NAME"),
+    " ",
+    env!("CARGO_PKG_VERSION"),
+);
 const USAGE: &'static str = "
 docdoc
 
@@ -170,7 +174,7 @@ fn main() {
         .unwrap_or_else(|e| e.exit());
 
     if args.flag_version {
-        return println!("{}", VERSION);
+        return println!("{}", VERSION_STR);
     }
 
     let theme_path = if args.flag_theme.is_empty() {
