@@ -4,17 +4,12 @@ use std::io::Error as IoError;
 use std::path::{Path, PathBuf};
 use yaml_rust::{YamlLoader, Yaml};
 use yaml_rust::emitter::EmitError;
-use fs_extra::copy_items; use fs_extra::dir::CopyOptions;
+use yaml_rust::scanner::ScanError;
+use fs_extra::copy_items;
+use fs_extra::dir::CopyOptions;
 use fs_extra::error::Error as FsError;
 
 #[derive(Debug)]
-pub struct Theme {
-    name: String,
-    path: PathBuf,
-    assets: Vec<PathBuf>,
-    metadata: Yaml,
-}
-
 pub enum Error {
     InvalidPath,
     ThemeNameMissing,
@@ -26,7 +21,16 @@ pub enum Error {
     PathError(String),
     FsError(FsError),
     IoError(IoError),
-    YamlError(EmitError)
+    YamlError(EmitError),
+    YamlScanError(ScanError),
+}
+
+#[derive(Debug)]
+pub struct Theme {
+    name: String,
+    path: PathBuf,
+    assets: Vec<PathBuf>,
+    metadata: Yaml,
 }
 
 impl Theme {
@@ -38,23 +42,22 @@ impl Theme {
             }
         };
 
-        if !path.is_dir() {
-            return Err(Error::PathError(
-                format!("The theme \"{}\" is not a directory!", path_str)
-            ));
-        }
-
         if !path.exists() {
             return Err(Error::PathError(
-                format!("Theme directory \"{}\" does not exist!", path_str)
+                format!("Theme directory `{}` does not exist!", path_str)
             ));
         }
 
+        if !path.is_dir() {
+            return Err(Error::PathError(
+                format!("The theme `{}` is not a directory!", path_str)
+            ));
+        }
         let theme_file_path = path.join("theme.yml");
 
         if !theme_file_path.exists() {
             return Err(Error::PathError(
-                format!("Theme file \"{}/theme.yml\" does not exist!", path_str)
+                format!("Theme file `{}/theme.yml` does not exist!", path_str)
             ));
         }
 
@@ -75,7 +78,9 @@ impl Theme {
 
         let docs = match YamlLoader::load_from_str(&document) {
             Ok(yaml_docs) => yaml_docs,
-            Err(_) => panic!("lol"),
+            Err(error) => {
+                return Err(Error::YamlScanError(error));
+            },
         };
         let doc = &docs[0];
 
@@ -155,5 +160,4 @@ impl Theme {
             Err(error) => Err(Error::FsError(error))
         }
     }
-
 }
