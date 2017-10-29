@@ -1,8 +1,10 @@
-use std::fs::File;
+use std::fs::{create_dir_all, File};
 use std::io::prelude::*;
 use std::io::Error as IoError;
 use std::path::{Path, PathBuf};
-use yaml_rust::{YamlLoader, Yaml};
+use serde_yaml;
+use serde_yaml::{Mapping, Error as SerdeYamlError};
+use yaml_rust::{YamlLoader, YamlEmitter, Yaml};
 use yaml_rust::emitter::EmitError;
 use yaml_rust::scanner::ScanError;
 use fs_extra::copy_items;
@@ -23,14 +25,15 @@ pub enum Error {
     IoError(IoError),
     YamlError(EmitError),
     YamlScanError(ScanError),
+    YamlSerializerError(SerdeYamlError),
 }
 
-#[derive(Debug)]
+#[derive(Serialize, Debug)]
 pub struct Theme {
     name: String,
     path: PathBuf,
     assets: Vec<PathBuf>,
-    metadata: Yaml,
+    metadata: Mapping,
 }
 
 impl Theme {
@@ -39,7 +42,7 @@ impl Theme {
             Some(path) => path,
             None => {
                 return Err(Error::InvalidPath);
-            }
+            },
         };
 
         if !path.exists() {
@@ -114,11 +117,26 @@ impl Theme {
                 },
             };
 
-            theme_assets.push(PathBuf::from(asset_path_str));
+            theme_assets.push(PathBuf::from(
+                format!("{}/{}", path_str, asset_path_str)
+            ));
         }
 
-        let theme_metadata = match doc["metadata"].clone() {
-            Yaml::Hash(_) => doc["metadata"].clone(),
+        let theme_metadata: Mapping = match doc["metadata"].clone() {
+            Yaml::Hash(_) => {
+                let mut metadata_str = String::new();
+                {
+                    let mut emitter = YamlEmitter::new(&mut metadata_str);
+                    emitter.dump(&doc["metadata"]).unwrap();
+                }
+
+                match serde_yaml::from_str(&metadata_str) {
+                    Ok(metadata) => metadata,
+                    Err(error) => {
+                        return Err(Error::YamlSerializerError(error));
+                    },
+                }
+            },
             Yaml::BadValue => {
                 return Err(Error::ThemeMetadataMissing);
             },
@@ -135,23 +153,30 @@ impl Theme {
         })
     }
 
-    pub fn name(&self) -> String {
-        self.name.clone()
+    pub fn name(&self) -> &String {
+        &self.name
     }
 
-    pub fn path(&self) -> PathBuf {
-        self.path.clone()
+    pub fn path(&self) -> &Path {
+        self.path.as_path()
     }
 
-    pub fn assets(&self) -> Vec<PathBuf> {
-        self.assets.clone()
+    pub fn assets(&self) -> &Vec<PathBuf> {
+        &self.assets
     }
 
-    pub fn metadata(&self) -> Yaml {
-        self.metadata.clone()
+    pub fn metadata(&self) -> &Mapping {
+        &self.metadata
     }
 
     pub fn copy_assets(&self, destination: &Path) -> Result<(), Error> {
+        match create_dir_all(&destination) {
+            Ok(_) => (),
+            Err(error) => {
+                return Err(Error::IoError(error));
+            },
+        }
+
         let mut options = CopyOptions::new();
         options.overwrite = true;
 
