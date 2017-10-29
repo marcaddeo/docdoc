@@ -43,6 +43,39 @@ struct Args {
     flag_version: bool,
 }
 
+// @TODO Maybe consider not putting dist/ in front of the file name. This
+// prevents us from keepnig the file hiearchy intact.
+//
+// But even without it, there are other issues:
+// - Clean up is non-trivial since themes define any number of assets that get
+//   copied into place. Maybe a `docdoc clean` command? But then it seems like
+//   docdoc has to know too much information. Where does it look to delete
+//   theme assets? Does it recurse? You'd have to do something like:
+//   ```
+//   docdoc clean -r --theme=docs/themes/theme_name docs/
+//   ```
+//
+//   Which would remove all of the themes assets from the docs directory,
+//   recursively.
+// - Similarly, deployment is non-trivial for the same reason. How do you know
+//   what files to deploy to the final location? You can glob for **/*.html,
+//   but again themes can define any number of assets. Maybe a
+//   `docdoc ls-files` command?
+//
+//   ```
+//   docdoc ls-files --theme=docs/themes/theme_name docs/
+//
+//   docs/document.html
+//   docs/assets
+//   docs/test/something.html
+//   docs/test/assets
+//   ```
+//
+//   This would basically just global for all **/*.html files in a path, and
+//   find any associated assets as well based on the themes asset definitions.
+//
+// Both issues have solutions that seem error prone, and seem to do too much.
+// Maybe something simpler is possible.
 fn main() {
     let args: Args = Docopt::new(USAGE)
         .and_then(|d| d.deserialize())
