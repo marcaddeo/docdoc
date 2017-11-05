@@ -116,15 +116,16 @@ fn main() {
         MarkdownParser::CommonMark
     };
 
-    document = document.with_body(markdown_to_html(document.body(), parser));
+    let html_body = markdown_to_html(&document.body().clone(), parser);
+    document.set_body(html_body);
 
     let rendered_body = match render_document(&theme, &args.flag_template, &document) {
         Ok(body) => body,
         Err(_) => panic!("Failed to render document!"),
     };
 
-    document = document.with_body(rendered_body);
-    document = document.with_path(&destination_document_path);
+    document.set_body(rendered_body);
+    document.set_path(&destination_document_path);
 
     match write_document(&document) {
         Ok(_) => (),

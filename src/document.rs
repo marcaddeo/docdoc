@@ -98,28 +98,16 @@ impl Document {
         &self.body
     }
 
-    pub fn with_path(&self, path: &Path) -> Document {
-        Document {
-            path: path.to_path_buf(),
-            metadata: self.metadata.clone(),
-            body: self.body.clone(),
-        }
+    pub fn set_path(&mut self, path: &Path) {
+        self.path = path.to_path_buf();
     }
 
-    pub fn with_metadata(&self, metadata: Mapping) -> Document {
-        Document {
-            path: self.path.clone(),
-            metadata: metadata,
-            body: self.body.clone(),
-        }
+    pub fn set_metadata(&mut self, metadata: Mapping) {
+        self.metadata = metadata;
     }
 
-    pub fn with_body(&self, body: String) -> Document {
-        Document {
-            path: self.path.clone(),
-            metadata: self.metadata.clone(),
-            body: body,
-        }
+    pub fn set_body(&mut self, body: String) {
+        self.body = body;
     }
 }
 
