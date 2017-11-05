@@ -26,6 +26,14 @@ pub struct Document {
 }
 
 impl Document {
+    pub fn new(path: PathBuf, metadata: Mapping, body: String) -> Document {
+        Document {
+            path: path,
+            metadata: metadata,
+            body: body,
+        }
+    }
+
     pub fn load(path: &Path) -> Result<Document, Error> {
         let path_str = match path.to_str() {
             Some(path) => path,
@@ -116,8 +124,25 @@ pub fn render_document(
     template: &str,
     document: &Document
 ) -> Result<String, Error> {
+    // Merge document metadata into theme metadata
+    let mut theme_metadata = theme.get_metadata().clone();
+    let document_metadata_iter = document.get_metadata().iter();
+
+    for (key, value) in document_metadata_iter {
+        // Themes must define all possible variables
+        if theme_metadata.contains_key(key) {
+            theme_metadata.insert(key.clone(), value.clone());
+        }
+    }
+
+    let final_document = Document::new(
+        document.get_path().to_path_buf(),
+        theme_metadata,
+        document.get_body().clone()
+    );
+
     let mut context = Context::new();
-    context.add("document", &document);
+    context.add("document", &final_document);
 
     let theme_path_str = match theme.get_path().to_str() {
         Some(path) => path,
