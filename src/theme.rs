@@ -153,19 +153,19 @@ impl Theme {
         })
     }
 
-    pub fn name(&self) -> &String {
+    pub fn get_name(&self) -> &String {
         &self.name
     }
 
-    pub fn path(&self) -> &Path {
+    pub fn get_path(&self) -> &Path {
         self.path.as_path()
     }
 
-    pub fn assets(&self) -> &Vec<PathBuf> {
+    pub fn get_assets(&self) -> &Vec<PathBuf> {
         &self.assets
     }
 
-    pub fn metadata(&self) -> &Mapping {
+    pub fn get_metadata(&self) -> &Mapping {
         &self.metadata
     }
 }
@@ -181,7 +181,7 @@ pub fn copy_theme_assets(theme: &Theme, destination: &Path) -> Result<(), Error>
     let mut options = CopyOptions::new();
     options.overwrite = true;
 
-    match copy_items(&theme.assets(), &destination, &options) {
+    match copy_items(&theme.get_assets(), &destination, &options) {
         Ok(_) => Ok(()),
         Err(error) => Err(Error::FsError(error))
     }

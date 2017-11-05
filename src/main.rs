@@ -116,7 +116,7 @@ fn main() {
         MarkdownParser::CommonMark
     };
 
-    let html_body = markdown_to_html(&document.body().clone(), parser);
+    let html_body = markdown_to_html(&document.get_body().clone(), parser);
     document.set_body(html_body);
 
     let rendered_body = match render_document(&theme, &args.flag_template, &document) {

@@ -86,15 +86,15 @@ impl Document {
         })
     }
 
-    pub fn path(&self) -> &Path {
+    pub fn get_path(&self) -> &Path {
         self.path.as_path()
     }
 
-    pub fn metadata(&self) -> &Mapping {
+    pub fn get_metadata(&self) -> &Mapping {
         &self.metadata
     }
 
-    pub fn body(&self) -> &String {
+    pub fn get_body(&self) -> &String {
         &self.body
     }
 
@@ -119,7 +119,7 @@ pub fn render_document(
     let mut context = Context::new();
     context.add("document", &document);
 
-    let theme_path_str = match theme.path().to_str() {
+    let theme_path_str = match theme.get_path().to_str() {
         Some(path) => path,
         None => {
             return Err(Error::InvalidPath);
@@ -137,7 +137,7 @@ pub fn render_document(
 }
 
 pub fn write_document(document: &Document) -> Result<(), Error> {
-    let document_path_str = match document.path().to_str() {
+    let document_path_str = match document.get_path().to_str() {
         Some(path) => path,
         None => {
             return Err(Error::InvalidPath);
@@ -166,7 +166,7 @@ pub fn write_document(document: &Document) -> Result<(), Error> {
         },
     };
 
-    match file.write_all(document.body().as_bytes()) {
+    match file.write_all(document.get_body().as_bytes()) {
         Ok(_) => Ok(()),
         Err(error) => Err(Error::IoError(error)),
     }
