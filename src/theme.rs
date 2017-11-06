@@ -170,7 +170,10 @@ impl Theme {
     }
 }
 
-pub fn copy_theme_assets(theme: &Theme, destination: &Path) -> Result<(), Error> {
+pub fn copy_theme_assets(
+    theme: &Theme,
+    destination: &Path
+) -> Result<(), Error> {
     match create_dir_all(&destination) {
         Ok(_) => (),
         Err(error) => {
