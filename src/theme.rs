@@ -1,4 +1,4 @@
-use std::fs::{create_dir_all, File};
+use std::fs::{create_dir_all, read_dir, File};
 use std::io::prelude::*;
 use std::io::Error as IoError;
 use std::path::{Path, PathBuf};
@@ -8,6 +8,7 @@ use yaml_rust::{YamlLoader, YamlEmitter, Yaml};
 use yaml_rust::emitter::EmitError;
 use yaml_rust::scanner::ScanError;
 use fs_extra::copy_items;
+use fs_extra::dir::remove;
 use fs_extra::dir::CopyOptions;
 use fs_extra::error::Error as FsError;
 
@@ -188,4 +189,38 @@ pub fn copy_theme_assets(
         Ok(_) => Ok(()),
         Err(error) => Err(Error::FsError(error))
     }
+}
+
+pub fn remove_theme_assets(theme: &Theme, directory: &Path, dry_run: bool) -> Result<(), Error> {
+    let dir_str = directory.to_str().unwrap();
+    let assets = theme.get_assets();
+
+    for asset in assets.iter() {
+        if dry_run {
+            println!("Would remove {}/{}", dir_str, asset.to_str().unwrap());
+        } else {
+            match remove(format!("{}/{}", dir_str, asset.to_str().unwrap())) {
+                Ok(_) => (),
+                Err(error) => {
+                    return Err(Error::FsError(error));
+                },
+            }
+        }
+
+    }
+
+    Ok(())
+}
+
+pub fn remove_theme_assets_recursive(theme: &Theme, directory: &Path, dry_run: bool) -> Result<(), Error> {
+    let paths = read_dir(directory.to_str().unwrap()).unwrap();
+
+    for entry in paths {
+        let entry = entry.unwrap();
+        if entry.path().is_dir() {
+            remove_theme_assets(theme, &entry.path(), dry_run)?;
+        }
+    }
+
+    Ok(())
 }
