@@ -38,27 +38,27 @@ error_chain! {
         }
 
         ThemeNameMissing {
-            display("Theme name missing"),
+            description("Theme name missing"),
         }
 
         ThemeNameNotValid {
-            display("Theme name not valid"),
+            description("Theme name not valid"),
         }
 
         ThemeAssetsMissing {
-            display("Theme assets missing"),
+            description("Theme assets missing"),
         }
 
         ThemeAssetsNotValid {
-            display("Theme assets is not valid"),
+            description("Theme assets is not valid"),
         }
 
         ThemeMetadataMissing {
-            display("Theme metadata missing"),
+            description("Theme metadata missing"),
         }
 
         ThemeMetadataNotValid {
-            display("Theme metadata not valid"),
+            description("Theme metadata not valid"),
         }
 
         NeverEndingFrontmatter {
