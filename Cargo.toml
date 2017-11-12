@@ -12,6 +12,7 @@ name = "docdoc"
 path = "src/main.rs"
 
 [dependencies]
+error-chain = "0.11.0"
 pulldown-cmark = { version = "0.0.11", default-features = false }
 tera = "0.10"
 serde = "1.0"

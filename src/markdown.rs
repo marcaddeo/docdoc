@@ -1,11 +1,7 @@
 use pulldown_cmark::OPTION_ENABLE_TABLES;
 use pulldown_cmark::{Parser, Options,  html};
 use comrak::{markdown_to_html as comrak_markdown_to_html, ComrakOptions};
-
-#[derive(Debug)]
-pub enum Error {
-    NeverEndingFrontmatter,
-}
+use ::errors::*;
 
 #[derive(Debug)]
 pub enum MarkdownParser {
@@ -19,7 +15,7 @@ pub struct Markdown<'a> {
 }
 
 impl<'a> Markdown<'a> {
-    pub fn parse(text: &'a str) -> Result<Markdown<'a>, Error> {
+    pub fn parse(text: &'a str) -> Result<Markdown<'a>> {
         if text.starts_with("---\n") {
             match String::from(&text[4..]).find("---\n") {
                 Some(end) => {
@@ -28,7 +24,7 @@ impl<'a> Markdown<'a> {
                         content: &text[end + 8..],
                     })
                 },
-                None => Err(Error::NeverEndingFrontmatter),
+                None => bail!(ErrorKind::NeverEndingFrontmatter),
             }
         } else {
             Ok(Markdown {
@@ -47,8 +43,8 @@ impl<'a> Markdown<'a> {
     }
 }
 
-pub fn markdown_to_html(markdown: &str, parser: MarkdownParser) -> String {
-    match parser {
+pub fn markdown_to_html(markdown: &str, parser: &MarkdownParser) -> String {
+    match *parser {
         MarkdownParser::CommonMark => {
             let mut html = String::with_capacity(markdown.len() * 3 / 2);
             let mut options = Options::empty();

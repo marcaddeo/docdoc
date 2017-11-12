@@ -1,22 +1,12 @@
 use std::fs::{create_dir_all, File};
 use std::io::prelude::*;
-use std::io::Error as IoError;
 use std::path::{Path, PathBuf};
 use serde_yaml;
-use serde_yaml::{Mapping, Error as SerdeYamlError};
-use markdown::{Markdown, Error as MarkdownError};
-use tera::{Context, Error as TeraError};
+use serde_yaml::Mapping;
+use markdown::Markdown;
+use tera::Context;
 use theme::Theme;
-
-#[derive(Debug)]
-pub enum Error {
-    InvalidPath,
-    PathError(String),
-    IoError(IoError),
-    MarkdownError(MarkdownError),
-    SerdeYamlError(SerdeYamlError),
-    RenderError(TeraError),
-}
+use ::errors::*;
 
 #[derive(Serialize, Debug)]
 pub struct Document {
@@ -34,56 +24,32 @@ impl Document {
         }
     }
 
-    pub fn load(path: &Path) -> Result<Document, Error> {
-        let path_str = match path.to_str() {
-            Some(path) => path,
-            None => {
-                return Err(Error::InvalidPath);
-            },
-        };
+    pub fn load(path: &Path) -> Result<Document> {
+        let path_string = path.to_str().ok_or("")?.to_string();
 
         if !path.exists() {
-            return Err(Error::PathError(
-                format!("Document `{}` does not exist!", path_str)
-            ));
+            bail!(ErrorKind::DocumentNotFound(path_string));
         }
 
         if !path.is_file() {
-            return Err(Error::PathError(
-                format!("Document `{}` is not a file!", path_str)
-            ));
+            bail!(ErrorKind::DocumentNotValid(path_string));
         }
 
         let mut document = String::new();
-        let mut file = match File::open(path) {
-            Ok(file) => file,
-            Err(error) => {
-                return Err(Error::IoError(error));
-            },
-        };
+        File::open(path)
+            .chain_err(|| format!(
+                "Failed to open document: '{}'",
+                path_string,
+            ))?
+            .read_to_string(&mut document)
+            .chain_err(|| format!(
+                "Failed to read document: '{}'",
+                path_string,
+            ))?;
 
-        match file.read_to_string(&mut document) {
-            Ok(_) => (),
-            Err(error) => {
-                return Err(Error::IoError(error));
-            },
-        }
-
-        let markdown = match Markdown::parse(&document) {
-            Ok(markdown) => markdown,
-            Err(error) => {
-                return Err(Error::MarkdownError(error));
-            },
-        };
+        let markdown = Markdown::parse(&document)?;
         let metadata = match markdown.frontmatter() {
-            Some(frontmatter) => {
-                match serde_yaml::from_str(frontmatter) {
-                    Ok(metadata) => metadata,
-                    Err(error) => {
-                        return Err(Error::SerdeYamlError(error));
-                    },
-                }
-            },
+            Some(frontmatter) => serde_yaml::from_str(frontmatter)?,
             None => Mapping::new(),
         };
 
@@ -123,7 +89,7 @@ pub fn render_document(
     theme: &Theme,
     template: &str,
     document: &Document
-) -> Result<String, Error> {
+) -> Result<String> {
     // Merge document metadata into theme metadata
     let mut theme_metadata = theme.get_metadata().clone();
     let document_metadata_iter = document.get_metadata().iter();
@@ -141,58 +107,31 @@ pub fn render_document(
         document.get_body().clone()
     );
 
+    let tera = compile_templates!(
+        &format!("{}/**/*.html", theme.get_path().to_str().ok_or("")?)
+    );
+
     let mut context = Context::new();
     context.add("document", &final_document);
 
-    let theme_path_str = match theme.get_path().to_str() {
-        Some(path) => path,
-        None => {
-            return Err(Error::InvalidPath);
-        },
-    };
-
-    let tera = compile_templates!(&format!("{}/**/*.html", theme_path_str));
-
-    match tera.render(template, &context) {
-        Ok(html) => Ok(html),
-        Err(error) => {
-            return Err(Error::RenderError(error));
-        },
-    }
+    Ok(tera.render(template, &context)?)
 }
 
-pub fn write_document(document: &Document) -> Result<(), Error> {
-    let document_path_str = match document.get_path().to_str() {
-        Some(path) => path,
-        None => {
-            return Err(Error::InvalidPath);
-        },
-    };
-    let parent_dir = match document.path.parent() {
-        Some(dir) => dir,
-        None => {
-            return Err(Error::PathError(
-                format!("`{}` has no parent directory!", document_path_str)
-            ));
-        },
-    };
+pub fn write_document(document: &Document) -> Result<()> {
+    let path_string = document.get_path().to_str().ok_or("")?.to_string();
 
-    match create_dir_all(parent_dir) {
-        Ok(_) => (),
-        Err(error) => {
-            return Err(Error::IoError(error));
-        },
-    }
+    create_dir_all(document.get_path().parent().ok_or("")?)?;
 
-    let mut file = match File::create(&document.path) {
-        Ok(file) => file,
-        Err(error) => {
-            return Err(Error::IoError(error));
-        },
-    };
+    File::create(&document.get_path())
+        .chain_err(|| format!(
+            "Failed to create document: '{}'",
+            path_string
+        ))?
+        .write_all(document.get_body().as_bytes())
+        .chain_err(|| format!(
+            "Failed to write document: '{}'",
+            path_string
+        ))?;
 
-    match file.write_all(document.get_body().as_bytes()) {
-        Ok(_) => Ok(()),
-        Err(error) => Err(Error::IoError(error)),
-    }
+    Ok(())
 }
