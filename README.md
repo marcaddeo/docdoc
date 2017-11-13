@@ -25,6 +25,9 @@ Options:
 ## Themes
 Themes follow a simple set of conventions using YAML for configuration.
 
+By default, `docdoc` will use the default theme located at
+`/usr/local/share/docdoc/themes/default`.
+
 ### Example theme
 ```
 example_theme
