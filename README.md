@@ -36,10 +36,10 @@ example_theme
 ```
 
 ### The theme configuration file
-The `theme.yml` file contain all configuration for the theme. The following
+The `theme.yml` file contains all configuration for the theme. The following
 fields are required:
 
-* `name` - This is the themes name
+* `name` - This is the theme's name
 * `metadata` - This defines all possible metadata that a template can use.
   Markdown documents may override the values defined in the theme using YAML
   frontmatter.
@@ -126,12 +126,43 @@ it's own document specific version.
 Documents will be written to the specified `<output-dir>`. Document paths will
 be preserved, but the first component of the directory will be stripped off.
 
+For simplicity, assets are copied alongside each document that gets generated.
+
 For example:
 `docdoc docs/example.md docs/dist`
 
-Will create `docs/dist/example.html` while:
-`docdoc docs/some/path/example.md docs/dist` will produce
-`docs/dist/some/pathexample.html`.
+Generates:
+```
+docs/dist
+├── assets
+│   └── css
+│       └── styles.css
+└── example.html
+```
+
+And `docdoc docs/some/path/example.md docs/dist` generates:
+```
+docs/dist/some/path
+├── assets
+│   └── css
+│       └── styles.css
+└── example.html
+```
+
+Leaving us with the final directory structure:
+```
+docs/dist
+├── assets
+│   └── css
+│       └── styles.css
+├── example.html
+└── some
+    └── path
+        ├── assets
+        │   └── css
+        │       └── styles.css
+        └── example.html
+```
 
 [CommonMark]: http://commonmark.org/
 [GitHub Flavored]: https://github.github.com/gfm/
