@@ -1,6 +1,6 @@
 # docdoc
-`docdoc` is a simple Markdown to themed HTML document generator. It supports
-[CommonMark][] Markdown, as well as GitHub Flavored Markdown.
+`docdoc` is a simple Markdown-to-themed-HTML document generator. It supports
+[CommonMark][] Markdown, as well as [GitHub Flavored][] Markdown.
 
 ## Usage
 ```
@@ -134,4 +134,5 @@ Will create `docs/dist/example.html` while:
 `docs/dist/some/pathexample.html`.
 
 [CommonMark]: http://commonmark.org/
+[GitHub Flavored]: https://github.github.com/gfm/
 [Tera]: https://tera.netlify.com/
