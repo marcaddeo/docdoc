@@ -21,7 +21,6 @@ Options:
     --version               Show version.
 ```
 
-
 ## Themes
 Themes follow a simple set of conventions using YAML for configuration.
 
