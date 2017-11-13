@@ -1,5 +1,6 @@
 # docdoc
 [![Build Status](https://travis-ci.org/marcaddeo/docdoc.svg)](https://travis-ci.org/marcaddeo/docdoc)
+[![Coverage Status](https://coveralls.io/repos/github/marcaddeo/docdoc/badge.svg)](https://coveralls.io/github/marcaddeo/docdoc)
 
 `docdoc` is a simple Markdown-to-themed-HTML document generator. It supports
 [CommonMark][] Markdown, as well as [GitHub Flavored][] Markdown.
