@@ -12,10 +12,13 @@ addons:
     packages:
     - libssl-dev
 
+rust:
+  - stable
+  - nightly
+
 matrix:
-  include:
-  - rust: nightly
-  - rust: stable
+  allow_failures:
+    - rust: nightly
 
 before_script:
   - cargo clean
@@ -24,8 +27,8 @@ script:
   # Build without unstable flag
   - cargo build
 
-  # Build the test executables in a separate step, since Tarpaulin
-  # will not fail on test compile errors.
+  # Build the test executables in a separate step, since Tarpaulin will not
+  # fail on test compile errors.
   - cargo build --tests
 
   # Run tests
