@@ -28,17 +28,20 @@ Usage:
     docdoc --version
 
 Options:
-    --theme=<theme>         Use a custom theme. [default: /usr/local/share/docodoc/themes/default]
-    --template=<template>   Use a specific template in a theme. [default: index.html]
-    --gfm                   Use GitHub Flavored Markdown.
-    -h, --help              Show this screen.
-    --version               Show version.
+    --theme=<theme>                 Use a custom theme. [default: /usr/local/share/docodoc/themes/default]
+    --template=<template>           Use a specific template in a theme. [default: index.html]
+    --preserve-first-component, -p  Don't strip out the first component of the document path.
+    --gfm                           Use GitHub Flavored Markdown.
+    -h, --help                      Show this screen.
+    --version                       Show version.
 ";
 
 #[derive(Debug, Deserialize)]
 struct Args {
     flag_theme: PathBuf,
     flag_template: PathBuf,
+    flag_preserve_first_component: bool,
+    flag_p: bool,
     flag_gfm: bool,
     flag_version: bool,
     arg_file: PathBuf,
@@ -85,7 +88,8 @@ fn run(args: &Args) -> Result<()> {
 
     let components = args.arg_file.components();
     let mut destination = String::from(args.arg_output_dir.to_str().ok_or("")?);
-    let mut skipped_first_directory = false;
+    let mut skipped_first_directory
+        = args.flag_preserve_first_component || args.flag_p;
 
     for component in components {
         if let Component::Normal(directory) = component {

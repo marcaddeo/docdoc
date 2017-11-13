@@ -14,11 +14,12 @@ Usage:
     docdoc --version
 
 Options:
-    --theme=<theme>         Use a custom theme. [default: /usr/local/share/docodoc/themes/default]
-    --template=<template>   Use a specific template in a theme. [default: index.html]
-    --gfm                   Use GitHub Flavored Markdown.
-    -h, --help              Show this screen.
-    --version               Show version.
+    --theme=<theme>                 Use a custom theme. [default: /usr/local/share/docodoc/themes/default]
+    --template=<template>           Use a specific template in a theme. [default: index.html]
+    -p, --preserve-first-component  Don't strip out the first component of the document path.
+    --gfm                           Use GitHub Flavored Markdown.
+    -h, --help                      Show this screen.
+    --version                       Show version.
 ```
 
 ## Themes
@@ -162,6 +163,21 @@ docs/dist
         │       └── styles.css
         └── example.html
 ```
+
+If you don't wish to strip off the first directory, you may pass the
+`--preserve-first-component` or `-p` flags.
+
+`docdoc --preserve-first-component docs/some/path/example.md docs/dist` will
+generate:
+```
+docs/dist/docs/some/path
+├── assets
+│   └── css
+│       └── styles.css
+└── example.html
+```
+
+Note that `docs/` was not stripped from the output path.
 
 [CommonMark]: http://commonmark.org/
 [GitHub Flavored]: https://github.github.com/gfm/
