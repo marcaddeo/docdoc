@@ -74,7 +74,7 @@ document.
 
 **`example_theme/index.html`**
 ```jinja
-<!doctype html>
+<!DOCTYPE html>
 
 <html lang="en">
 <head>
