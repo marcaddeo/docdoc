@@ -1,44 +1,42 @@
-sudo: false
+---
 language: rust
-# necessary for `travis-cargo coveralls --no-sudo`
+dist: trusty
+sudo: false
+
+cache:
+  cargo: true
+  apt: true
+
 addons:
   apt:
     packages:
-      - libcurl4-openssl-dev
-      - libelf-dev
-      - libdw-dev
-      - binutils-dev # optional: only required for the --verify flag of coveralls
+    - libssl-dev
 
-# run builds for all the trains (and more)
-rust:
-  - nightly
-  - beta
-  - stable
+matrix:
+  include:
+  - rust: nightly
+  - rust: stable
 
-# load travis-cargo
+install:
+  - bash <(curl https://raw.githubusercontent.com/xd009642/tarpaulin/master/travis-install.sh)
+
 before_script:
-  - |
-      pip install 'travis-cargo<0.2' --user &&
-      export PATH=$HOME/.local/bin:$PATH
+  - cargo clean
 
-# the main build
 script:
-  - |
-      travis-cargo build &&
-      travis-cargo test
-after_success:
-  # upload the documentation from the build with stable (automatically only actually
-  # runs on the master branch, not individual PRs)
-  # - travis-cargo --only stable doc-upload
-  # measure code coverage and upload to coveralls.io (the verify
-  # argument mitigates kcov crashes due to malformed debuginfo, at the
-  # cost of some speed <https://github.com/huonw/travis-cargo/issues/12>)
-  - travis-cargo coveralls --no-sudo --verify
+  # Build without unstable flag
+  - cargo build
 
-env:
-  global:
-    # trigger
-    # override the default `--features unstable` used for the nightly branch (optional)
-    - TRAVIS_CARGO_NIGHTLY_FEATURE=""
-    # encrypted github token for doc upload (see `GH_TOKEN` link above)
-    # - secure: "..."
+  # Build the test executables in a separate step, since Tarpaulin
+  # will not fail on test compile errors.
+  - cargo build --tests
+
+  # Run tests
+  - RUST_TEST_THREADS=1 cargo test
+
+after_success:
+  - bash <(curl -Ls https://codecov.io/bash)
+
+notifications:
+  email:
+    on_success: never
