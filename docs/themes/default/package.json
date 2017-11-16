@@ -1,0 +1,13 @@
+{
+  "name": "docdoc-default-theme",
+  "version": "0.1.0",
+  "description": "The default docdoc theme",
+  "main": "gulpfile.js",
+  "dependencies": {},
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "MIT"
+}
