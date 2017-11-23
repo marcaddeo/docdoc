@@ -5,7 +5,10 @@ extern crate fs_extra;
 #[macro_use]
 extern crate serde_derive;
 
+use std::fs::File;
+use std::io::prelude::*;
 use std::path::{Component, Path, PathBuf};
+use serde_yaml::Mapping;
 use docopt::Docopt;
 use docdoc::theme::{copy_theme_assets, Theme};
 use docdoc::document::{render_document, write_document, Document};
@@ -23,23 +26,25 @@ docdoc
 Generate a themed HTML document from Markdown. Supports both CommonMark and GitHub Flavored Markdown.
 
 Usage:
-    docdoc [options] [--] <file> <output-dir>
+    docdoc [--extra-metadata=<metadata>, -e METADATA ...] [options] [--] <file> <output-dir>
     docdoc -h | --help
     docdoc --version
 
 Options:
-    --theme=<theme>                 Use a custom theme. [default: /usr/local/share/docodoc/themes/default]
-    --template=<template>           Use a specific template in a theme. [default: index.html]
-    --preserve-first-component, -p  Don't strip out the first component of the document path.
-    --gfm                           Use GitHub Flavored Markdown.
-    -h, --help                      Show this screen.
-    --version                       Show version.
+    --theme=<theme>                     Use a custom theme. [default: /usr/local/share/docodoc/themes/default]
+    --template=<template>               Use a specific template in a theme. [default: index.html]
+    --extra-metadata=<metadata>, -e     Set additional YAML document metadata. Prepend with @ to load a YAML file.
+    --preserve-first-component, -p      Don't strip out the first component of the document path.
+    --gfm                               Use GitHub Flavored Markdown.
+    -h, --help                          Show this screen.
+    --version                           Show version.
 ";
 
 #[derive(Debug, Deserialize)]
 struct Args {
     flag_theme: PathBuf,
     flag_template: PathBuf,
+    flag_extra_metadata: Vec<String>,
     flag_preserve_first_component: bool,
     flag_gfm: bool,
     flag_version: bool,
@@ -109,6 +114,47 @@ fn run(args: &Args) -> Result<()> {
 
     let theme = Theme::load(&args.flag_theme)?;
     let mut document = Document::load(&args.arg_file)?;
+
+    if !args.flag_extra_metadata.is_empty() {
+        for extra in &args.flag_extra_metadata {
+            let mut extra_metadata: Mapping;
+            let extra_metadata_str = extra.clone();
+
+            if extra_metadata_str.starts_with('@') {
+                let yaml_path = Path::new(
+                    extra_metadata_str.get(1..).ok_or("")?
+                );
+                let yaml_path_string = yaml_path
+                    .to_str()
+                    .ok_or("")?
+                    .to_string();
+
+                let mut yaml_document = String::new();
+                File::open(yaml_path)
+                    .chain_err(|| format!(
+                        "Failed to open extra metadata file: '{}'",
+                        yaml_path_string,
+                    ))?
+                    .read_to_string(&mut yaml_document)
+                    .chain_err(|| format!(
+                        "Failed to read extra metadata file: '{}'",
+                        yaml_path_string,
+                    ))?;
+
+                extra_metadata = serde_yaml::from_str(&yaml_document)?;
+            } else {
+                extra_metadata = serde_yaml::from_str(&extra_metadata_str)?;
+            }
+
+            let mut document_metadata = document.get_metadata().clone();
+
+            for (key, value) in extra_metadata.iter() {
+                document_metadata.insert(key.clone(), value.clone());
+            }
+
+            document.set_metadata(document_metadata);
+        }
+    }
 
     let parser = if args.flag_gfm {
         MarkdownParser::GithubFlavoredMarkdown

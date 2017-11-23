@@ -12,17 +12,18 @@ docdoc
 Generate a themed HTML document from Markdown. Supports both CommonMark and GitHub Flavored Markdown.
 
 Usage:
-    docdoc [options] [--] <file> <output-dir>
+    docdoc [--extra-metadata=<metadata>, -e METADATA ...] [options] [--] <file> <output-dir>
     docdoc -h | --help
     docdoc --version
 
 Options:
-    --theme=<theme>                 Use a custom theme. [default: /usr/local/share/docodoc/themes/default]
-    --template=<template>           Use a specific template in a theme. [default: index.html]
-    -p, --preserve-first-component  Don't strip out the first component of the document path.
-    --gfm                           Use GitHub Flavored Markdown.
-    -h, --help                      Show this screen.
-    --version                       Show version.
+    --theme=<theme>                     Use a custom theme. [default: /usr/local/share/docodoc/themes/default]
+    --template=<template>               Use a specific template in a theme. [default: index.html]
+    --extra-metadata=<metadata>, -e     Set additional YAML document metadata. Prepend with @ to load a YAML file.
+    --preserve-first-component, -p      Don't strip out the first component of the document path.
+    --gfm                               Use GitHub Flavored Markdown.
+    -h, --help                          Show this screen.
+    --version                           Show version.
 ```
 
 ## Themes
@@ -127,6 +128,17 @@ title: Example Document Title
 This is an example document. It overrides the theme's `title` metadata with
 it's own document specific version.
 ```
+
+### Extra metadata
+Document metadata can also be overriden using the `--extra-metadata` or `-e`
+flags. Metadata passed this way takes precedence over all other defined
+metadata. This supports passing in YAML as a string, or loading from a YAML
+file by prefixing the file path with `@`.
+
+`docdoc -e "title: Overriden title" -e "subtitle: Overriden subtitle"
+docs/example.md docs/dist`
+
+`docdoc -e '@overrides.yml' docs/example.md docs/dist`
 
 ### Output
 Documents will be written to the specified `<output-dir>`. Document paths will
