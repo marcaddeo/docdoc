@@ -81,7 +81,7 @@ impl Theme {
                 let mut metadata_str = String::new();
                 {
                     let mut emitter = YamlEmitter::new(&mut metadata_str);
-                    emitter.dump(&doc["metadata"]).unwrap(); // @TODO
+                    emitter.dump(&doc["metadata"])?;
                 }
 
                 serde_yaml::from_str(&metadata_str)?

@@ -2,7 +2,7 @@ error_chain! {
     foreign_links {
         SerdeYamlError(::serde_yaml::Error);
         YamlScanError(::yaml_rust::ScanError);
-        // YamlEmitError(::yaml_rust::EmitError);
+        YamlEmitError(::yaml_rust::EmitError);
         TeraError(::tera::Error);
         IoError(::std::io::Error);
         FsExtraError(::fs_extra::error::Error);
