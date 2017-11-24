@@ -41,7 +41,6 @@ struct Args {
     flag_theme: PathBuf,
     flag_template: PathBuf,
     flag_preserve_first_component: bool,
-    flag_p: bool,
     flag_gfm: bool,
     flag_version: bool,
     arg_file: PathBuf,
@@ -88,8 +87,7 @@ fn run(args: &Args) -> Result<()> {
 
     let components = args.arg_file.components();
     let mut destination = String::from(args.arg_output_dir.to_str().ok_or("")?);
-    let mut skipped_first_directory
-        = args.flag_preserve_first_component || args.flag_p;
+    let mut skipped_first_directory = args.flag_preserve_first_component;
 
     for component in components {
         if let Component::Normal(directory) = component {
