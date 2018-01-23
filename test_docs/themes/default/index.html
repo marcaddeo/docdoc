@@ -13,6 +13,33 @@
 </head>
 
 <body>
-    {{ document.body | safe }}
+    <header class="header"> <!--Intended for use only when the sidebar navigation isn't enabled.-->
+        <a href="/" alt="{{ document.metadata.title }}" class="header--branding">
+            <img src="https://loremflickr.com/320/240/dog" class=" class="header--branding--logo" /><!--Logo - 500x500 jpg, png or svg  -->
+            <p class="header--branding--name">Doggos</p> <!--Expected to be the company/owner's name, optional. Should only show if we don't get the logo. -->
+            <p class="header--branding--title">{{ document.metadata.title }}</p> <!--Expected to be the title of the documentation -->
+        </a>
+        <!--This is really all I see going here for now, but future options might be a search bar or contact link for questions, maybe an FAQ. Also we might want to allow for the ability to link back to the many company page. Stripe does this with like a double logo thing. We could probably mimic it if you wanted. -->
+    </header>
+    <div class="sidebar"> <!--Intended for use only when the sidebar navigation has been enabled.-->
+        <a href="/" alt="{{ document.metadata.title }}" class="sidebar--branding">
+            <img src="https://loremflickr.com/320/240/dog" class=" class="sidebar--branding--logo" /><!--Logo - 500x500 jpg, png or svg  -->
+            <p class="sidebar--branding--name">Doggos</p> <!--Expected to be the company/owner's name, optional. Should only show if we don't get the logo. -->
+            <p class="sidebar--branding--title">{{ document.metadata.title }}</p> <!--Expected to be the title of the documentation -->
+        </a>
+        <nav class="sidebar--navigation navigation">
+            <ul class="navigation--primary">
+                <li class="navigation--primary--item">
+                    <a href="http://www.ilovedogs.com/" class="navigation--primary--item--link">Pupperoni</a>
+                    <ul class="navigation--secondary--item">
+                        <li class="navigation--primary--item"><a href="http://www.ilovedogs.com/" class="navigation--primary--item--link">Pupperoni</a></li>
+                    </ul>
+                </li>
+            </ul>
+        </nav>
+    </div>
+    <div class="main">
+        {{ document.body | safe }}
+    </div>
 </body>
 </html>
