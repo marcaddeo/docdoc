@@ -6,8 +6,11 @@ gulp.task('styles', function () {
     return gulp.src('src/scss/*.scss')
         .pipe(sass())
         .pipe(minifyCSS())
-        .pipe(gulp.dest('assets/css'));
+        .pipe(gulp.dest('assets/css'))
 });
 
-gulp.task('default', ['styles']);
-gulp.task('watch', gulp.watch('src/scss/*.scss', ['styles']));
+gulp.task('watch', function() {
+  gulp.watch('src/scss/*.css', ['styles']);
+});
+
+gulp.task('default', [ 'styles' ]);
