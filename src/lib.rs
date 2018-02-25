@@ -6,6 +6,7 @@ extern crate serde_yaml;
 extern crate yaml_rust;
 extern crate pulldown_cmark;
 extern crate comrak;
+extern crate typed_arena;
 #[macro_use]
 extern crate serde_derive;
 #[macro_use]

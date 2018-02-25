@@ -7,6 +7,7 @@ error_chain! {
         IoError(::std::io::Error);
         FsExtraError(::fs_extra::error::Error);
         DocoptError(::docopt::Error);
+        StringUtf8Error(::std::string::FromUtf8Error);
     }
 
     errors {
